@@ -1,7 +1,7 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/print.hpp>
-
-using namespace eosio;
+ 
+using namespace eosio; 
 using namespace std;
 
 //typedef eosio::generic_currency<eosio::token<N(my.currenc)

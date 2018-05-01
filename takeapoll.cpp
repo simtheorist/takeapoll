@@ -4,7 +4,7 @@
 
 using namespace eosio;
 using namespace std;
-using namespace simtheorist;
+using namespace simtheorist; 
 
 class takeapoll : public contract
 {
@@ -17,19 +17,29 @@ class takeapoll : public contract
     void savevote(name sender, string& voter, string& pollName, string& vote)
     {
         string keyVal = pollName + "_" + voter;
-        auto i = _polls.find(STN(pollName));
-        if (i != _polls.end())
+        // Make sure this poll exists
+        auto p = _polls.find(STN(pollName));
+        if (p != _polls.end())
         {
-            auto j = _votes.find(STN(keyVal));
-            if (j == _votes.end())
+            // Make sure this isn't a duplicate vote (same poll and voter)
+            auto v = _votes.find(STN(keyVal));
+            if (v == _votes.end())
             {
-                _votes.emplace(sender, [&](auto& row)
-                {
-                    row.sender = sender;
-                    row.voter = voter;
-                    row.pollName = pollName;
-                    row.vote = vote;
-                } );
+                // Make sure this is a valid option for this poll
+                string optionKey = p->pollName + "_" + vote;
+                auto po = _polloptions.find(STN(optionKey));
+                if (po != _polloptions.end())
+                {                
+                    _votes.emplace(sender, [&](auto& row)
+                    {
+                        row.voteKey = STN(keyVal);
+                        row.sender = sender;
+                        row.voter = voter;
+                        row.pollName = pollName;
+                        row.vote = vote;
+                    } );
+                }
+                else { print("Not a Valid Option"); }
             }
             else { print("Vote Already Cast"); }
         }
@@ -40,7 +50,6 @@ class takeapoll : public contract
     // @abi action
     void saveoption(name sender, string& pollName, string& option)
     {
-        print("Checking Auth   ");
         require_auth(sender);
 
         string keyVal = pollName + "_" + option;
@@ -48,6 +57,12 @@ class takeapoll : public contract
         auto i = _polls.find(STN(pollName));
         if (i != _polls.end())
         {
+            name pollSender = i->sender;
+            eosio_assert(sender == pollSender, "Only the poll creator can add valid options");
+
+            string pn = "PollName: " + i->pollName;
+            print(pn.data());
+
             auto j = _polloptions.find(STN(keyVal));
             if (j == _polloptions.end())
             {
@@ -59,12 +74,11 @@ class takeapoll : public contract
                     optrow.optionKey = STN(keyVal);
                 } );
             }
-            else { print("Poll Option Already Exists"); }
+            else { print(" Poll Option Already Exists"); }
             
         }
-        else { print("Poll Not Found"); }
+        else { print(" Poll Not Found"); }
 
-        print (STN(pollName));
     }
 
     // @abi action
@@ -74,9 +88,11 @@ class takeapoll : public contract
         require_auth(sender);
         string keyVal = pollName + "_" + option;
 
-        auto i = _polloptions.find(STN(keyVal));
-        if (i != _polloptions.end())
-        { _polloptions.erase(i); }
+        auto po = _polloptions.find(STN(keyVal));
+        if (po != _polloptions.end())
+        { 
+            _polloptions.erase(po);         
+        }
         else { print("Poll Option Not Found"); }
     }
 
