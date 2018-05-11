@@ -4,7 +4,7 @@
 
 using namespace eosio;
 using namespace std;
-using namespace simtheorist; 
+using namespace simtheorist;
 
 class takeapoll : public contract
 {
@@ -18,21 +18,21 @@ class takeapoll : public contract
     {
         string keyVal = pollName + "_" + voter;
         // Make sure this poll exists
-        auto p = _polls.find(STN(pollName));
+        auto p = _polls.find(stn(pollName));
         if (p != _polls.end())
         {
             // Make sure this isn't a duplicate vote (same poll and voter)
-            auto v = _votes.find(STN(keyVal));
+            auto v = _votes.find(stn(keyVal));
             if (v == _votes.end())
             {
                 // Make sure this is a valid option for this poll
                 string optionKey = p->pollName + "_" + vote;
-                auto po = _polloptions.find(STN(optionKey));
+                auto po = _polloptions.find(stn(optionKey));
                 if (po != _polloptions.end())
                 {                
                     _votes.emplace(sender, [&](auto& row)
                     {
-                        row.voteKey = STN(keyVal);
+                        row.voteKey = stn(keyVal);
                         row.sender = sender;
                         row.voter = voter;
                         row.pollName = pollName;
@@ -54,7 +54,7 @@ class takeapoll : public contract
 
         string keyVal = pollName + "_" + option;
 
-        auto i = _polls.find(STN(pollName));
+        auto i = _polls.find(stn(pollName));
         if (i != _polls.end())
         {
             name pollSender = i->sender;
@@ -63,7 +63,7 @@ class takeapoll : public contract
             string pn = "PollName: " + i->pollName;
             print(pn.data());
 
-            auto j = _polloptions.find(STN(keyVal));
+            auto j = _polloptions.find(stn(keyVal));
             if (j == _polloptions.end())
             {
                 _polloptions.emplace(sender, [&](auto& optrow )
@@ -71,7 +71,7 @@ class takeapoll : public contract
                     optrow.sender = sender;
                     optrow.pollName = pollName;
                     optrow.option = option;
-                    optrow.optionKey = STN(keyVal);
+                    optrow.optionKey = stn(keyVal);
                 } );
             }
             else { print(" Poll Option Already Exists"); }
@@ -88,7 +88,7 @@ class takeapoll : public contract
         require_auth(sender);
         string keyVal = pollName + "_" + option;
 
-        auto po = _polloptions.find(STN(keyVal));
+        auto po = _polloptions.find(stn(keyVal));
         if (po != _polloptions.end())
         { 
             _polloptions.erase(po);         
@@ -102,7 +102,7 @@ class takeapoll : public contract
         print("Checking Auth   ");
         require_auth(sender);
 
-        auto i = _polls.find(STN(pollName));
+        auto i = _polls.find(stn(pollName));
         if (i != _polls.end())
         { _polls.erase(i); }
         else { print("Poll Not Found"); }    
@@ -114,12 +114,12 @@ class takeapoll : public contract
     {
         require_auth(sender);
         
-        auto i = _polls.find(STN(pollName));
+        auto i = _polls.find(stn(pollName));
         if (i == _polls.end())
         {
             _polls.emplace(sender, [&](auto& row ) 
             {
-                row.pollKey = STN(pollName);
+                row.pollKey = stn(pollName);
                 row.pollName = pollName;
                 row.sender = sender;
                 row.isOpen = isOpen;
@@ -139,7 +139,7 @@ class takeapoll : public contract
                 row.pollType = pollType;
             } );
         }
-        print (STN(pollName));
+        print (stn(pollName));
     };
 
     //multi_index<N(polls), polls< indexed_by<N(pollName)>, const_mem_fun<polls, uint64_t, &polls::by_pollName> _polls;
@@ -154,7 +154,12 @@ private:
     multi_index<N(polloptions), polloptions> _polloptions;
     multi_index<N(votes), votes> _votes;
 
-    static constexpr uint64_t STN( string& str ) {
+    static uint64_t stn(const std::string& s) {
+        return eosio::string_to_name(s.c_str());
+    };
+
+/*
+    static constexpr uint64_t stn( string& str ) {
 
       uint32_t len = 0;
       while( str[len] ) ++len;
@@ -177,8 +182,9 @@ private:
       }
       return value;
    }
+*/
 };
 
 
 //EOSIO_ABI (takeapoll, (savepoll)(abihack))
-EOSIO_ABI (takeapoll, (savepoll)(deletepoll)(saveoption)(deleteoption)(savevote)(abihack))
+EOSIO_ABI (takeapoll, (savepoll)(deletepoll)(saveoption)(deleteoption)(savevote))
